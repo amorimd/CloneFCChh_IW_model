@@ -174,13 +174,10 @@ if __name__ == "__main__":
 	            fpar=fpar,zpar=zpar,fcutoff=fcutoff,
 	            nb_holes_per_crosssection=nb_holes_per_cs,Cm=1.,Ce=1.)
 
-            #collimator
-            #imp_coll,wake_coll=FCChh_manycoll_iw_model(E,avbetax,avbetay,collSettingsFileName,wake_calc=wake_calc,ftypescan=fpar.ftypescan,nflog=fpar.nflog,namesref=None,lxplusbatch=lxplusbatchImp,
-	    #    comment='LHCcoll',dire='FCChh_BSCH_'+Estr+'/');
 
             #interconnects: resonator
             fpar2=freq_param(fmin=1,fmax=1e14,ftypescan=2,nflog=500,fminrefine=2.95e9,fmaxrefine=3.15e9,nrefine=200000)
-            imp_interconnects, wake_interconnects = imp_model_resonator(np.array([350.0e3,350.0e3]),np.array([3.05e9,3.05e9]),np.array([86801,86801]),beta=1,wake_calc=False,fpar=fpar2,zpar=zpar,listcomp=['Zxdip','Zydip'])
+            imp_interconnects, wake_interconnects = imp_model_resonator(np.array([1.52e6,1.92e6]),np.array([3.058e9,3.058e9]),np.array([86802,86802]),beta=1,wake_calc=False,fpar=fpar2,zpar=zpar,listcomp=['Zxdip','Zydip'])
 
 
 
@@ -189,8 +186,6 @@ if __name__ == "__main__":
             add_impedance_wake(wake_mod,wake_mod_vac,betax/avbetax,betay/avbetay);
             add_impedance_wake(imp_mod,imp_holes,betax/avbetax,betay/avbetay);
             add_impedance_wake(wake_mod,wake_holes,betax/avbetax,betay/avbetay);
-            #add_impedance_wake(imp_mod,imp_coll,1,1);
-            #add_impedance_wake(wake_mod,wake_coll,1,1);
             add_impedance_wake(imp_mod,imp_interconnects,1,1);
             add_impedance_wake(wake_mod,wake_interconnects,1,1);
 
