@@ -1,18 +1,7 @@
 #!/usr/bin/python
 
 import sys
-#sys.path.append('/afs/cern.ch/work/x/xbuffat/IRIS/PYTHON_codes_and_scripts');
-#sys.path.append('/afs/cern.ch/work/x/xbuffat/IRIS/PYTHON_codes_and_scripts/General_Python_tools');
-#sys.path.append('/afs/cern.ch/work/x/xbuffat/IRIS/PYTHON_codes_and_scripts/DELPHI_Python');
-#sys.path.append('/afs/cern.ch/work/x/xbuffat/IRIS/PYTHON_codes_and_scripts/Impedance_lib_Python');
-#sys.path.insert(1,'/afs/cern.ch/work/x/xbuffat/scipy-install/lib64/python2.6/site-packages');
-#sys.path.insert(1,'/afs/cern.ch/work/x/xbuffat/numpy-install/lib64/python2.6/site-packages');
 import pickle as pick
-# import local libraries if needed
-#pymod=commands.getoutput("echo $PYMOD");
-#if pymod.startswith('local'):
-#    py_numpy=commands.getoutput("echo $PY_NUMPY");sys.path.insert(1,py_numpy);
-#    py_matpl=commands.getoutput("echo $PY_MATPL");sys.path.insert(1,py_matpl);
 
 if len(sys.argv)>2: lxplusbatchImp=str(sys.argv[1]);lxplusbatchDEL=str(sys.argv[2]);
 elif len(sys.argv)>1: lxplusbatchImp=str(sys.argv[1]);lxplusbatchDEL=None;
@@ -29,55 +18,8 @@ from particle_param import *
 from Impedance import *
 from DELPHI import *
 from FCChh_coll_imp import FCChh_manycoll_iw_model
+from FCChh_param import *
 
-def FCChh_param(E=50e12,Qxfrac=0.31,Qyfrac=0.32,V=16e6):
-
-    ''' generate typical FCChh parameters, from the beam energy E in eV, the fractional parts of the tunes and the RF voltage in V.
-    Outputs:
-    - machine: string with machine name(here 'TLEP'+option),
-    - E: same as input (beam energy in eV),
-    - gamma: relativistic mass factor,
-    - sigmaz: RMS bunch length in m,
-    - taub: total bunch length in s (4*RMS),
-    - R: machine pysical radius (circumference/(2 pi)),
-    - Qx: total horizontal tune (integer + fractional parts),
-    - Qxfrac: fractional horizontal tune,
-    - Qy: total vertical tune (integer + fractional parts),
-    - Qyfrac: fractional vertical tune,
-    - Qs: synchrotron tune,
-    - eta: slippage factor (alpha_p-1/gamma^2),
-    - f0: revolution frequency,
-    - omega0: revolution angular frequency=2pi*f0,
-    - omegas: synchrotron angular frequency=Qs*omega0,
-    - dphase: phase of damper w.r.t. "normal" purely resistive damper (0),
-    - Estr: string with energy (e.g. '50TeV').
-    '''
-
-    e,m0,c,E0=proton_param();
-    # E is the energy in eV
-    Estr=str(int(E/1e12))+'TeV';print(Estr)
-    machine='FCChh';
-    gamma=E*e/E0
-    beta=np.sqrt(1.-1./(gamma**2))
-    circ=101898.2192; # total circumference in m
-    R=circ/(2.*np.pi) # machine radius
-    f0=c*beta/circ # rev. frequency
-    omega0=2.*np.pi*f0;
-    sigmaz=8e-2;
-    Qxint=120;Qyint=120; # based on beta~R/Q with beta proportional to E^(1/3) and taking as a reference the LHC case
-    Qx=Qxint+Qxfrac;
-    Qy=Qyint+Qyfrac;
-    alphap=8.9E-5
-    
-    h=133650 # approximate harmonic number
-    taub=4.*sigmaz/(beta*c); # full length in s
-    eta=alphap-1./(gamma*gamma); # slip factor
-    Qs=Qs_from_RF_param(V,h,gamma,eta,phis=0.,particle='proton');
-    omegas=Qs*omega0;
-    
-    dphase=0.; # additional damper phase
-    
-    return machine,E,gamma,sigmaz,taub,R,Qx,Qxfrac,Qy,Qyfrac,Qs,eta,f0,omega0,omegas,dphase,Estr;
 
 if __name__ == "__main__":
 
@@ -108,6 +50,9 @@ if __name__ == "__main__":
     
     kmax=1; # number of converged eigenvalues (kmax most unstable ones are converged)
     kmaxplot=50; # number of plotted eigenvalues
+    
+    
+    scenario_name='BS_interconnects_'+Estr
     root_result='/afs/cern.ch/work/d/damorim/work/DELPHI_results/'+machine+'/BS_interconnects_'+Estr+'V1';
     os.system("mkdir -p "+root_result);
     suffix=''; # suffix for output files 
@@ -115,8 +60,6 @@ if __name__ == "__main__":
     
     # longitudinal distribution initialization
     g,a,b=longdistribution_decomp(taub,typelong="Gaussian");
-
-    collSettingsFileName='collgaps_scale1.dat'
 
     # scan definitions
     materialscan=['Cu50K']; # material is cold Cu (5K should be ~same as 20K)
@@ -161,14 +104,14 @@ if __name__ == "__main__":
                     fpar=fpar,zpar=zpar,waketol=waketol,freqlinbisect=1e11,geometry='round',comment='_'+name+strhgap);
 
             imp_mod_vac,wake_mod_vac=imp_model_elliptic(iw_input,halfgap,orientation='V',
-                    wake_calc=wake_calc,flagrm=True,lxplusbatch=lxplusbatchImp,queue='1nh',dire=machine+'BS_interconnects_'+Estr+'/');
+                    wake_calc=wake_calc,flagrm=True,lxplusbatch=lxplusbatchImp,queue='1nh',dire=machine+'_'+scenario_name+'_'+Estr+'/');
 
             multiply_impedance_wake(imp_mod_vac,circ);
             multiply_impedance_wake(wake_mod_vac,circ);
 
 
             #interconnects: resonator
-            fpar2=freq_param(fmin=1,fmax=1e14,ftypescan=2,nflog=500,fminrefine=2.95e9,fmaxrefine=3.15e9,nrefine=200000)
+            fpar2=freq_param(fmin=1.0,fmax=1.0e14,ftypescan=2,nflog=40,fminrefine=2.95e9,fmaxrefine=3.15e9,nrefine=100000)
             imp_interconnects, wake_interconnects = imp_model_resonator(np.array([1.52e6,1.92e6]),np.array([3.058e9,3.058e9]),np.array([86802,86802]),beta=1,wake_calc=False,fpar=fpar2,zpar=zpar,listcomp=['Zxdip','Zydip'])
 
 
@@ -190,10 +133,10 @@ if __name__ == "__main__":
                 filemodel.close();
                 
                 # write Ascii files with each component
-                write_imp_wake_mod(imp_mod,"_"+machine+"_Allthemachine_"+Estr+strhgap,
+                write_imp_wake_mod(imp_mod,"_"+machine+"_Allthemachine_"+Estr+'_'+scenario_name,
                         listcomp=['Zlong','Zxdip','Zydip','Zxquad','Zyquad'],
                     dire=root_result+'/')
-                write_wake_HEADTAIL(wake_mod,root_result+"/"+machine+"_Allthemachine_"+Estr+strhgap+'.wake',ncomp=2);
+                write_wake_HEADTAIL(wake_mod,root_result+"/"+machine+"_Allthemachine_"+Estr+'_'+scenario_name+'.wake',ncomp=2);
                 # impedance plot
                 plot_compare_imp_model([imp_mod],['Vacuum pipe RW impedance'],listcomp=['Zydip'],
                         saveimp=root_result+'/plot_imp_'+name+strhgap,
